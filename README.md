@@ -17,6 +17,7 @@ Open source. No accounts. No telemetry.</p>
   <img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-blue">
   <img alt="Platform" src="https://img.shields.io/badge/platform-Linux%20x86__64-informational">
   <img alt="Status" src="https://img.shields.io/badge/status-early%20preview-orange">
+  <img alt="Downloads" src="https://img.shields.io/github/downloads/whyefkan/entDM/total?label=downloads&color=blue">
 </p>
 
 ![entDM screenshot](assets/screenshot.png)
@@ -50,9 +51,9 @@ Grab the latest Linux build from [Releases](https://github.com/whyefkan/entDM/re
 
 Release artifacts:
 
-- `entdm-0.1.0-Linux.deb` — Debian/Ubuntu installer
-- `entdm-0.1.0-Linux.tar.gz` — portable Linux build
-- `entdm-0.1.0-windows-x64-setup.exe` — Windows installer
+- `entdm-0.1.1-Linux.deb` — Debian/Ubuntu installer
+- `entdm-0.1.1-Linux.tar.gz` — portable Linux build
+- `entdm-0.1.1-windows-x64-setup.exe` — Windows installer
 - `entdm-windows-x64.zip` — portable Windows build
 
 ## Build from source
@@ -120,11 +121,15 @@ entDM reads a small JSON manifest to check for updates:
 https://raw.githubusercontent.com/whyefkan/entDM/main/latest.json
 ```
 
-Release policy:
+Release policy (enforced since **v0.1.1**):
 
-- A newer `version` shows an in-app update notice.
-- If the installed version is below `min_version`, updating is required before
-  the app can be used again.
+- entDM checks the manifest on startup and every 30 minutes.
+- If a newer `version` is published, the app shows a blocking **Update required**
+  screen until the update is installed.
+- `min_version` can additionally force older versions to update.
+
+> v0.1.0 predates the in-app updater. Install v0.1.1 once manually; later
+> releases are enforced automatically.
 
 The manifest is maintained on the `main` branch. Package URLs point to GitHub
 Releases.

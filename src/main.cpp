@@ -1358,6 +1358,179 @@ static std::string json_string_field(const std::string& body, const std::string&
     return out;
 }
 
+#ifndef ENTDM_VERSION
+#define ENTDM_VERSION "0.1.1"
+#endif
+
+static const char* kUpdateManifestUrl =
+    "https://raw.githubusercontent.com/whyefkan/entDM/main/latest.json";
+
+enum UpdateState {
+    UPDATE_IDLE = 0,
+    UPDATE_CHECKING,
+    UPDATE_REQUIRED,
+    UPDATE_FAILED,
+};
+
+static std::atomic<int> g_update_state{UPDATE_IDLE};
+static std::mutex g_update_mutex;
+static std::string g_update_latest;
+static std::string g_update_url;
+
+static std::string update_platform_key() {
+#ifdef _WIN32
+    return "windows-x86_64";
+#else
+    return "linux-x86_64";
+#endif
+}
+
+static bool version_newer(const std::string& candidate, const std::string& current) {
+    auto parse = [](const std::string& value) {
+        std::vector<int> parts;
+        std::string number;
+        const std::string input = value + ".";
+        for (char c : input) {
+            if (c == '.') {
+                parts.push_back(number.empty() ? 0 : std::atoi(number.c_str()));
+                number.clear();
+            } else if (std::isdigit(static_cast<unsigned char>(c))) {
+                number.push_back(c);
+            }
+        }
+        return parts;
+    };
+
+    const std::vector<int> a = parse(candidate);
+    const std::vector<int> b = parse(current);
+    const std::size_t count = std::max(a.size(), b.size());
+    for (std::size_t i = 0; i < count; ++i) {
+        const int left = i < a.size() ? a[i] : 0;
+        const int right = i < b.size() ? b[i] : 0;
+        if (left != right) {
+            return left > right;
+        }
+    }
+    return false;
+}
+
+static size_t update_write_cb(char* ptr, size_t size, size_t nmemb, void* userdata) {
+    auto* output = static_cast<std::string*>(userdata);
+    output->append(ptr, size * nmemb);
+    return size * nmemb;
+}
+
+static bool http_get_string(const std::string& url, std::string& output) {
+    CURL* curl = curl_easy_init();
+    if (curl == nullptr) {
+        return false;
+    }
+    char errbuf[CURL_ERROR_SIZE];
+    errbuf[0] = '\0';
+    curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+    curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 5L);
+    curl_easy_setopt(curl, CURLOPT_USERAGENT, "entDM/" ENTDM_VERSION);
+    curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
+    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10L);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 20L);
+    curl_easy_setopt(curl, CURLOPT_FAILONERROR, 1L);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, update_write_cb);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &output);
+    curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errbuf);
+    const CURLcode result = curl_easy_perform(curl);
+    long status = 0;
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status);
+    curl_easy_cleanup(curl);
+    return result == CURLE_OK && status < 400;
+}
+
+static void check_updates_async() {
+    int current = g_update_state.load();
+    if (current == UPDATE_CHECKING || current == UPDATE_REQUIRED) {
+        return;
+    }
+    if (!g_update_state.compare_exchange_strong(current, UPDATE_CHECKING)) {
+        return;
+    }
+
+    std::thread([]() {
+        std::string body;
+        if (!http_get_string(kUpdateManifestUrl, body)) {
+            g_update_state.store(UPDATE_FAILED);
+            return;
+        }
+
+        const std::string latest = json_string_field(body, "version");
+        const std::string min_version = json_string_field(body, "min_version");
+        const std::string release_page = json_string_field(body, "release_page");
+        const std::string download = json_string_field(body, update_platform_key());
+        if (latest.empty()) {
+            g_update_state.store(UPDATE_FAILED);
+            return;
+        }
+
+        {
+            std::lock_guard<std::mutex> lock(g_update_mutex);
+            g_update_latest = latest;
+            g_update_url = !download.empty()
+                ? download
+                : (!release_page.empty()
+                       ? release_page
+                       : "https://github.com/whyefkan/entDM/releases/latest");
+        }
+
+        const bool required = version_newer(latest, ENTDM_VERSION) ||
+                              version_newer(min_version, ENTDM_VERSION);
+        g_update_state.store(required ? UPDATE_REQUIRED : UPDATE_IDLE);
+    }).detach();
+}
+
+static void draw_update_modal() {
+    if (g_update_state.load() != UPDATE_REQUIRED) {
+        return;
+    }
+
+    const char* popup_id = "Update required###entdm_update";
+    if (!ImGui::IsPopupOpen(popup_id)) {
+        ImGui::OpenPopup(popup_id);
+    }
+
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(viewport->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(470.0f, 0.0f), ImGuiCond_Appearing);
+
+    if (ImGui::BeginPopupModal(popup_id, nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        std::string latest;
+        std::string url;
+        {
+            std::lock_guard<std::mutex> lock(g_update_mutex);
+            latest = g_update_latest;
+            url = g_update_url;
+        }
+
+        ImGui::TextUnformatted("Update required");
+        ImGui::Separator();
+        ImGui::Spacing();
+        ImGui::TextWrapped(
+            "A new version of entDM is available. You must update before you can continue.");
+        ImGui::Spacing();
+        ImGui::Text("Installed: v%s", ENTDM_VERSION);
+        ImGui::Text("Latest:    v%s", latest.c_str());
+        ImGui::Spacing();
+        if (ImGui::Button("Download update", ImVec2(190.0f, 0.0f))) {
+            if (!url.empty()) {
+                ent::open_url(url);
+            }
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Quit entDM", ImVec2(120.0f, 0.0f))) {
+            glfwSetWindowShouldClose(g_window, GLFW_TRUE);
+        }
+        ImGui::EndPopup();
+    }
+}
+
 static void http_respond(ent::socket_handle client, int code, const std::string& body) {
     const char* reason = (code == 200) ? "OK" : "Bad Request";
     char header[512];
@@ -1681,7 +1854,7 @@ static void draw_about_window() {
     if (ImGui::Begin(title.c_str(), &g_show_about, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::Text("entDM");
         ImGui::SameLine();
-        ImGui::TextDisabled("v0.1.0");
+        ImGui::TextDisabled("v%s", ENTDM_VERSION);
         ImGui::Separator();
         ImGui::TextWrapped("%s", tr(K_ABOUT_DESC));
         ImGui::Spacing();
@@ -1699,6 +1872,13 @@ static void draw_about_window() {
 }
 
 static void draw_ui() {
+    static double next_update_check = 0.0;
+    const double now = ImGui::GetTime();
+    if (now >= next_update_check) {
+        next_update_check = now + 1800.0;
+        check_updates_async();
+    }
+
     const bool use_intl_font = g_language != LANG_EN && g_font_intl != nullptr;
     if (use_intl_font) {
         ImGui::PushFont(g_font_intl);
@@ -1869,6 +2049,8 @@ static void draw_ui() {
     std::snprintf(footer, sizeof(footer), tr(K_FOOTER), rss, active, g_connections,
                   g_bridge_ready.load() ? tr(K_ON) : tr(K_OFF));
     ImGui::TextDisabled("%s", footer);
+
+    draw_update_modal();
 
     ImGui::End();
 

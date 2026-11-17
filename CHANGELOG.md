@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1] - 2026-11-18
+
+### Added
+
+- Mandatory in-app update check against `latest.json`.
+- Blocking **Update required** screen when a newer release exists.
+- Download badge and release packaging for Linux and Windows.
+
 ## [0.1.0] - 2026-11-18
 
 ### Added
