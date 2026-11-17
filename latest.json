@@ -5,7 +5,7 @@
   "notes": "Initial open-source release.",
   "release_page": "https://github.com/whyefkan/entDM/releases",
   "downloads": {
-    "linux-x86_64": "",
-    "windows-x86_64": ""
+    "linux-x86_64": "https://github.com/whyefkan/entDM/releases/download/v0.1.0/entdm-0.1.0-Linux.tar.gz",
+    "windows-x86_64": "https://github.com/whyefkan/entDM/releases/download/v0.1.0/entdm-0.1.0-windows-x64-setup.exe"
   }
 }

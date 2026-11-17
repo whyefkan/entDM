@@ -50,8 +50,8 @@ Grab the latest Linux build from [Releases](https://github.com/whyefkan/entDM/re
 
 Release artifacts:
 
-- `entdm_0.1.0_amd64.deb` — Debian/Ubuntu installer
-- `entDM-0.1.0-Linux.tar.gz` — portable Linux build
+- `entdm-0.1.0-Linux.deb` — Debian/Ubuntu installer
+- `entdm-0.1.0-Linux.tar.gz` — portable Linux build
 - `entdm-0.1.0-windows-x64-setup.exe` — Windows installer
 - `entdm-windows-x64.zip` — portable Windows build
 
