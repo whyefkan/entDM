@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  :root { color-scheme: dark; }
+  body {
+    margin: 0;
+    width: 300px;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: #15181f;
+    color: #e5e7eb;
+  }
+  .wrap { padding: 14px; }
+  .row { display: flex; align-items: center; gap: 8px; }
+  h1 { font-size: 15px; margin: 0; font-weight: 600; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #dc2626; }
+  .dot.on { background: #22c55e; }
+  .status { font-size: 11px; color: #9ca3af; margin-left: auto; }
+  input[type=text] {
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 12px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid #303746;
+    background: #1c212b;
+    color: #e5e7eb;
+    font-size: 12px;
+  }
+  button {
+    width: 100%;
+    margin-top: 8px;
+    padding: 9px;
+    border: 0;
+    border-radius: 8px;
+    background: #38bdf8;
+    color: #08121a;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  button:disabled { background: #2b3442; color: #6b7280; cursor: default; }
+  label { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 12px; color: #c7ccd6; }
+  .hint { margin-top: 10px; font-size: 10px; color: #6b7280; line-height: 1.5; }
+  .msg { margin-top: 8px; font-size: 11px; min-height: 14px; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="row">
+      <h1>entDM</h1>
+      <span id="dot" class="dot"></span>
+      <span id="status" class="status">checking...</span>
+    </div>
+    <input id="url" type="text" placeholder="https://example.com/file.zip" autocomplete="off">
+    <button id="send">Send to entDM</button>
+    <label><input id="intercept" type="checkbox"> Intercept Chrome downloads</label>
+    <div id="msg" class="msg"></div>
+    <div class="hint">Start the entDM app first. The bridge runs on 127.0.0.1:8765.</div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

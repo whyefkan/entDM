@@ -1,0 +1,12 @@
+entDM
+Copyright 2026 whyefkan
+
+This product includes software developed by third parties:
+
+- Dear ImGui (https://github.com/ocornut/imgui) — MIT License
+- GLFW (https://www.glfw.org/) — zlib/libpng License
+- libcurl (https://curl.se/) — curl License
+- OpenGL headers and driver — system provided
+
+Optional runtime assets such as DejaVu fonts are provided by the operating
+system and are not redistributed by this repository.

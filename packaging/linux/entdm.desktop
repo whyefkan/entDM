@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=entDM
+GenericName=Download Manager
+Comment=Fast, lightweight multi-connection download manager
+Exec=entdm
+Icon=entdm
+Terminal=false
+Categories=Network;FileTransfer;
+Keywords=download;downloader;http;

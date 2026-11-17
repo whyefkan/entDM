@@ -1,0 +1,9 @@
+/build/
+/dist/
+/third_party/curl/
+/imgui.ini
+*.o
+*.a
+*.so
+*.log
+.DS_Store

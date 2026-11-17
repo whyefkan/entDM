@@ -1,0 +1,11 @@
+{
+  "version": "0.1.0",
+  "min_version": "0.1.0",
+  "channel": "stable",
+  "notes": "Initial open-source release.",
+  "release_page": "https://github.com/whyefkan/entDM/releases",
+  "downloads": {
+    "linux-x86_64": "",
+    "windows-x86_64": ""
+  }
+}
